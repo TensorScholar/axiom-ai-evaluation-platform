@@ -34,13 +34,13 @@
       "completed_at": "2026-06-30T00:50:44Z"
     },
     "005": {
-      "status": "unlocked",
-      "verification": null,
-      "report": null,
-      "completed_at": null
+      "status": "completed",
+      "verification": ".axiom/verification/task_005_verification.json",
+      "report": ".axiom/reports/task_005_report.md",
+      "completed_at": "2026-06-30T00:53:35Z"
     },
     "006": {
-      "status": "locked",
+      "status": "unlocked",
       "verification": null,
       "report": null,
       "completed_at": null
