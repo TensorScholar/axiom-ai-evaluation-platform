@@ -9,7 +9,8 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 
 from app.domain import Dataset, Project, TestCase
-from app.evaluations import EvaluationRunRecord
+from app.evaluations import EvaluationRunRecord, EvaluationStatus, SampleOutcome
+from app.persistence.query_models import FailedSampleRecord, RegressionCandidate
 from app.regression import RegressionSuite
 
 
@@ -125,7 +126,71 @@ class SQLiteStore:
         return self._get_payload(self.evaluation_runs, run_id, EvaluationRunRecord)
 
     def list_evaluation_runs(self) -> list[EvaluationRunRecord]:
-        return self._list_payloads(self.evaluation_runs, EvaluationRunRecord)
+        return self.query_evaluation_runs()
+
+    def query_evaluation_runs(
+        self,
+        *,
+        project_id: str | None = None,
+        dataset_id: str | None = None,
+        status: EvaluationStatus | str | None = None,
+    ) -> list[EvaluationRunRecord]:
+        statement = select(self.evaluation_runs.c.payload).order_by(self.evaluation_runs.c.id)
+        if project_id is not None:
+            statement = statement.where(self.evaluation_runs.c.project_id == project_id)
+        if dataset_id is not None:
+            statement = statement.where(self.evaluation_runs.c.dataset_id == dataset_id)
+        if status is not None:
+            status_value = status.value if isinstance(status, EvaluationStatus) else str(status)
+            statement = statement.where(self.evaluation_runs.c.status == status_value)
+
+        with self.engine.connect() as conn:
+            rows = conn.execute(statement).all()
+        return [EvaluationRunRecord.model_validate(json.loads(row.payload)) for row in rows]
+
+    def list_failed_samples(
+        self,
+        *,
+        project_id: str | None = None,
+        dataset_id: str | None = None,
+        status: EvaluationStatus | str | None = None,
+    ) -> list[FailedSampleRecord]:
+        failures: list[FailedSampleRecord] = []
+        for run in self.query_evaluation_runs(project_id=project_id, dataset_id=dataset_id, status=status):
+            for sample in run.sample_results:
+                reason = _sample_failure_reason(sample)
+                if reason is not None:
+                    failures.append(
+                        FailedSampleRecord(
+                            run_id=run.id,
+                            test_case_id=sample.test_case_id,
+                            outcome=sample.outcome,
+                            output=sample.output,
+                            error_message=sample.error_message,
+                            reason=reason,
+                        )
+                    )
+        return failures
+
+    def list_regression_candidates(
+        self,
+        *,
+        project_id: str | None = None,
+        dataset_id: str | None = None,
+        status: EvaluationStatus | str | None = None,
+    ) -> list[RegressionCandidate]:
+        return [
+            RegressionCandidate(
+                run_id=failure.run_id,
+                test_case_id=failure.test_case_id,
+                failure_reason=failure.reason,
+            )
+            for failure in self.list_failed_samples(
+                project_id=project_id,
+                dataset_id=dataset_id,
+                status=status,
+            )
+        ]
 
     def save_regression_suite(self, suite: RegressionSuite) -> None:
         self._insert(
@@ -161,3 +226,20 @@ class SQLiteStore:
 
 def _dump(model: Any) -> str:
     return json.dumps(model.model_dump(mode="json"), sort_keys=True)
+
+
+def _sample_failure_reason(sample: Any) -> str | None:
+    if sample.outcome == SampleOutcome.ERRORED:
+        return sample.error_message or "sample errored"
+
+    metrics = sample.metadata.get("metrics", [])
+    if not isinstance(metrics, list):
+        return None
+    failed_names: list[str] = []
+    for metric in metrics:
+        if isinstance(metric, dict) and metric.get("passed") is False:
+            name = metric.get("name")
+            failed_names.append(str(name) if name else "unnamed metric")
+    if failed_names:
+        return "failed metrics: " + ", ".join(failed_names)
+    return None
