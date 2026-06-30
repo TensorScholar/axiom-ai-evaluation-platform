@@ -5,7 +5,14 @@ import sys
 from collections.abc import Sequence
 from typing import TextIO
 
-from app.ci_gate import GateInputError, gate_exit_code, load_gate_result
+from app.ci_gate import (
+    GateInputError,
+    gate_exit_code,
+    gate_result_from_summary,
+    load_evaluation_summary,
+    load_gate_result,
+    write_gate_result,
+)
 from app.local_eval import LocalEvalInputError, run_local_eval_from_files
 
 
@@ -20,6 +27,12 @@ def build_parser() -> argparse.ArgumentParser:
     eval_parser.add_argument("--dataset-file", required=True)
     eval_parser.add_argument("--provider-file", required=True)
     eval_parser.add_argument("--output-file", required=True)
+
+    summary_gate_parser = subparsers.add_parser("summarize-gate")
+    summary_gate_parser.add_argument("--summary-file", required=True)
+    summary_gate_parser.add_argument("--output-file", required=True)
+    summary_gate_parser.add_argument("--min-pass-rate", type=float, default=1.0)
+    summary_gate_parser.add_argument("--max-error-rate", type=float, default=0.0)
 
     return parser
 
@@ -59,6 +72,22 @@ def main(
             return 2
 
         print(f"AXIOM eval completed: {run.id}", file=stdout)
+        return 0
+
+    if args.command == "summarize-gate":
+        try:
+            summary = load_evaluation_summary(args.summary_file)
+            result = gate_result_from_summary(
+                summary,
+                min_pass_rate=args.min_pass_rate,
+                max_error_rate=args.max_error_rate,
+            )
+            write_gate_result(args.output_file, result)
+        except GateInputError as exc:
+            print(f"AXIOM summarize-gate error: {exc}", file=stderr)
+            return 2
+
+        print(f"AXIOM gate result written: {result.suite_id}", file=stdout)
         return 0
 
     return 2
