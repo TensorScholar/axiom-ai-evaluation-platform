@@ -1,0 +1,67 @@
+{
+  "project": "axiom",
+  "version": "0.5",
+  "mode": "codex_app_autopilot",
+  "tasks": {
+    "000": {
+      "status": "completed",
+      "verification": ".axiom/verification/task_000_verification.json",
+      "report": ".axiom/reports/task_000_report.md",
+      "completed_at": "2026-06-29T01:01:17Z"
+    },
+    "001": {
+      "status": "completed",
+      "verification": ".axiom/verification/task_001_verification.json",
+      "report": ".axiom/reports/task_001_report.md",
+      "completed_at": "2026-06-30T00:31:32Z"
+    },
+    "002": {
+      "status": "completed",
+      "verification": ".axiom/verification/task_002_verification.json",
+      "report": ".axiom/reports/task_002_report.md",
+      "completed_at": "2026-06-30T00:37:26Z"
+    },
+    "003": {
+      "status": "locked",
+      "verification": null,
+      "report": null,
+      "completed_at": null
+    },
+    "004": {
+      "status": "locked",
+      "verification": null,
+      "report": null,
+      "completed_at": null
+    },
+    "005": {
+      "status": "locked",
+      "verification": null,
+      "report": null,
+      "completed_at": null
+    },
+    "006": {
+      "status": "locked",
+      "verification": null,
+      "report": null,
+      "completed_at": null
+    },
+    "007": {
+      "status": "locked",
+      "verification": null,
+      "report": null,
+      "completed_at": null
+    },
+    "008": {
+      "status": "locked",
+      "verification": null,
+      "report": null,
+      "completed_at": null
+    },
+    "009": {
+      "status": "locked",
+      "verification": null,
+      "report": null,
+      "completed_at": null
+    }
+  }
+}
