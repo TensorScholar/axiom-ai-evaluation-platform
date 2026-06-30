@@ -14,6 +14,7 @@ from app.ci_gate import (
     write_gate_result,
 )
 from app.local_eval import LocalEvalInputError, run_local_eval_from_files
+from app.regression import RegressionPromotionError, run_regression_promotion_from_files
 from app.trace_file_import import TraceFileImportError, run_trace_file_import
 
 
@@ -45,6 +46,13 @@ def build_parser() -> argparse.ArgumentParser:
         default="test-cases",
     )
     trace_import_parser.add_argument("--source-run-id")
+
+    promote_parser = subparsers.add_parser("promote-regressions")
+    promote_parser.add_argument("--run-file", required=True)
+    promote_parser.add_argument("--test-cases-file", required=True)
+    promote_parser.add_argument("--output-file", required=True)
+    promote_parser.add_argument("--suite-id", required=True)
+    promote_parser.add_argument("--suite-name", required=True)
 
     return parser
 
@@ -118,6 +126,26 @@ def main(
         print(
             "AXIOM trace import completed: "
             f"{result.failed_records} failed of {result.records_imported} records",
+            file=stdout,
+        )
+        return 0
+
+    if args.command == "promote-regressions":
+        try:
+            result = run_regression_promotion_from_files(
+                run_file=args.run_file,
+                test_cases_file=args.test_cases_file,
+                output_file=args.output_file,
+                suite_id=args.suite_id,
+                suite_name=args.suite_name,
+            )
+        except RegressionPromotionError as exc:
+            print(f"AXIOM promote-regressions error: {exc}", file=stderr)
+            return 2
+
+        print(
+            "AXIOM regression promotion completed: "
+            f"{result.promoted_count} cases promoted to {result.suite.id}",
             file=stdout,
         )
         return 0
