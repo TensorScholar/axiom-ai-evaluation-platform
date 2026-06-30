@@ -15,7 +15,7 @@ from app.evaluations.models import (
     SampleResult,
 )
 from app.metrics import exact_match
-from app.providers import ProviderAdapter, ProviderRequest
+from app.providers import ProviderAdapter, ProviderRequest, classify_provider_exception
 
 
 def build_prompt(inputs: dict[str, object]) -> str:
@@ -65,13 +65,15 @@ def _run_sample(
     try:
         response = provider.generate(request)
     except Exception as exc:
+        failure = classify_provider_exception(exc, provider_name=request.model_name)
         return SampleResult(
             test_case_id=test_case.id,
             outcome=SampleOutcome.ERRORED,
-            error_message=str(exc) or exc.__class__.__name__,
+            error_message=failure.message,
             metadata={
                 "prompt": request.prompt,
                 "exception_type": exc.__class__.__name__,
+                "provider_failure": failure.model_dump(mode="json"),
             },
         )
 

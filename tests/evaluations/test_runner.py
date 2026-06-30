@@ -120,6 +120,12 @@ def test_run_evaluation_cases_records_provider_exceptions_as_sample_errors() -> 
     assert run.sample_results[0].metadata == {
         "prompt": "fail",
         "exception_type": "NoScriptedResponseError",
+        "provider_failure": {
+            "provider_name": "fake-model",
+            "category": "unknown",
+            "message": "fake provider has no scripted responses remaining",
+            "exception_type": "NoScriptedResponseError",
+        },
     }
 
 
