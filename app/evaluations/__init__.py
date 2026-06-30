@@ -11,6 +11,7 @@ from app.evaluations.models import (
     SampleOutcome,
     SampleResult,
 )
+from app.evaluations.runner import build_prompt, run_evaluation_cases
 
 __all__ = [
     "EvaluationRunMetadata",
@@ -18,8 +19,10 @@ __all__ = [
     "EvaluationStatus",
     "SampleOutcome",
     "SampleResult",
+    "build_prompt",
     "can_transition",
     "new_evaluation_run",
     "record_sample_result",
+    "run_evaluation_cases",
     "transition_run",
 ]
