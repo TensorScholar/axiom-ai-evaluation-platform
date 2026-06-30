@@ -58,10 +58,10 @@
       "completed_at": "2026-06-30T01:07:52Z"
     },
     "009": {
-      "status": "unlocked",
-      "verification": null,
-      "report": null,
-      "completed_at": null
+      "status": "completed",
+      "verification": ".axiom/verification/task_009_verification.json",
+      "report": ".axiom/reports/task_009_report.md",
+      "completed_at": "2026-06-30T01:11:02Z"
     }
   }
 }
