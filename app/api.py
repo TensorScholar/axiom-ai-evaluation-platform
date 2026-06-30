@@ -6,9 +6,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from app.ci_gate import GateInputError, GateResult, gate_result_from_summary
 from app.domain import Dataset, Project
-from app.evaluations import EvaluationRunRecord, EvaluationStatus
+from app.evaluations import EvaluationRunRecord, EvaluationRunSummary, EvaluationStatus
 from app.persistence.sqlite import PersistenceConflictError, SQLiteStore
+from app.regression import RegressionSuite
 
 
 router = APIRouter()
@@ -108,3 +110,48 @@ def get_evaluation_run(run_id: str, store: StoreDependency) -> EvaluationRunReco
     if run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="evaluation run not found")
     return run
+
+
+@router.post(
+    "/regression-suites",
+    response_model=RegressionSuite,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_regression_suite(suite: RegressionSuite, store: StoreDependency) -> RegressionSuite:
+    try:
+        store.save_regression_suite(suite)
+    except PersistenceConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="regression suite already exists",
+        ) from exc
+    return suite
+
+
+@router.get("/regression-suites", response_model=list[RegressionSuite])
+def list_regression_suites(store: StoreDependency) -> list[RegressionSuite]:
+    return store.list_regression_suites()
+
+
+@router.get("/regression-suites/{suite_id}", response_model=RegressionSuite)
+def get_regression_suite(suite_id: str, store: StoreDependency) -> RegressionSuite:
+    suite = store.get_regression_suite(suite_id)
+    if suite is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="regression suite not found")
+    return suite
+
+
+@router.post("/gate-results/from-summary", response_model=GateResult)
+def create_gate_result_from_summary(
+    summary: EvaluationRunSummary,
+    min_pass_rate: float = 1.0,
+    max_error_rate: float = 0.0,
+) -> GateResult:
+    try:
+        return gate_result_from_summary(
+            summary,
+            min_pass_rate=min_pass_rate,
+            max_error_rate=max_error_rate,
+        )
+    except GateInputError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
