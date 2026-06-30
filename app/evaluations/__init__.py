@@ -12,10 +12,12 @@ from app.evaluations.models import (
     SampleResult,
 )
 from app.evaluations.runner import build_prompt, run_evaluation_cases
+from app.evaluations.summary import EvaluationRunSummary, summarize_evaluation_run
 
 __all__ = [
     "EvaluationRunMetadata",
     "EvaluationRunRecord",
+    "EvaluationRunSummary",
     "EvaluationStatus",
     "SampleOutcome",
     "SampleResult",
@@ -24,5 +26,6 @@ __all__ = [
     "new_evaluation_run",
     "record_sample_result",
     "run_evaluation_cases",
+    "summarize_evaluation_run",
     "transition_run",
 ]
