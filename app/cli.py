@@ -14,6 +14,7 @@ from app.ci_gate import (
     write_gate_result,
 )
 from app.local_eval import LocalEvalInputError, run_local_eval_from_files
+from app.trace_file_import import TraceFileImportError, run_trace_file_import
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -33,6 +34,17 @@ def build_parser() -> argparse.ArgumentParser:
     summary_gate_parser.add_argument("--output-file", required=True)
     summary_gate_parser.add_argument("--min-pass-rate", type=float, default=1.0)
     summary_gate_parser.add_argument("--max-error-rate", type=float, default=0.0)
+
+    trace_import_parser = subparsers.add_parser("trace-import")
+    trace_import_parser.add_argument("--trace-file", required=True)
+    trace_import_parser.add_argument("--output-file", required=True)
+    trace_import_parser.add_argument("--dataset-id", required=True)
+    trace_import_parser.add_argument(
+        "--output-kind",
+        choices=["test-cases", "regression-cases"],
+        default="test-cases",
+    )
+    trace_import_parser.add_argument("--source-run-id")
 
     return parser
 
@@ -88,6 +100,26 @@ def main(
             return 2
 
         print(f"AXIOM gate result written: {result.suite_id}", file=stdout)
+        return 0
+
+    if args.command == "trace-import":
+        try:
+            result = run_trace_file_import(
+                trace_file=args.trace_file,
+                output_file=args.output_file,
+                dataset_id=args.dataset_id,
+                output_kind=args.output_kind,
+                source_run_id=args.source_run_id,
+            )
+        except TraceFileImportError as exc:
+            print(f"AXIOM trace-import error: {exc}", file=stderr)
+            return 2
+
+        print(
+            "AXIOM trace import completed: "
+            f"{result.failed_records} failed of {result.records_imported} records",
+            file=stdout,
+        )
         return 0
 
     return 2
