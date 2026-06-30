@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from typing import TextIO
 
 from app.ci_gate import GateInputError, gate_exit_code, load_gate_result
+from app.local_eval import LocalEvalInputError, run_local_eval_from_files
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -14,6 +15,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     gate_parser = subparsers.add_parser("gate")
     gate_parser.add_argument("--result-file", required=True)
+
+    eval_parser = subparsers.add_parser("eval")
+    eval_parser.add_argument("--dataset-file", required=True)
+    eval_parser.add_argument("--provider-file", required=True)
+    eval_parser.add_argument("--output-file", required=True)
 
     return parser
 
@@ -40,6 +46,20 @@ def main(
         else:
             print(f"AXIOM gate failed: {result.suite_id}", file=stdout)
         return exit_code
+
+    if args.command == "eval":
+        try:
+            run = run_local_eval_from_files(
+                dataset_file=args.dataset_file,
+                provider_file=args.provider_file,
+                output_file=args.output_file,
+            )
+        except LocalEvalInputError as exc:
+            print(f"AXIOM eval error: {exc}", file=stderr)
+            return 2
+
+        print(f"AXIOM eval completed: {run.id}", file=stdout)
+        return 0
 
     return 2
 
